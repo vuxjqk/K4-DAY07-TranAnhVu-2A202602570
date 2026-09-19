@@ -1,8 +1,8 @@
 # Báo Cáo Nhóm — Lab 7: Embedding & Vector Store
 
-**Nhóm:** 3nguoi
-**Thành viên:** Trần Anh Vũ (2A202602570), Nguyễn Bá Chính (2A202602654), Dương Thị Hồng Viên (2A202602385)
-**Ngày:** 2026-09-19
+**Nhóm:** TDTU Library
+**Thành viên:** Nguyễn Bá Chinh (2A202602654) — R1; Trần Anh Vũ (2A202602570) — R2; Dương Thị Hồng Viên (2A202602385) — R3
+**Ngày:** 19/09/2026
 
 > **Nộp 1 bản / nhóm.** Phần cá nhân (hướng tiếp cận, kết quả riêng, dự đoán…) mỗi thành viên nộp riêng trong `REPORT_CANHAN.md`. Chi tiết thang điểm: `docs/SCORING.md`.
 
@@ -14,95 +14,93 @@
 
 ### Chủ đề (Domain) & Lý Do Chọn
 
-**Chủ đề:** Dịch vụ thư viện đại học (thư viện TDTU: mượn trả, gia hạn, đặt phòng, thẻ và tài khoản, dịch vụ theo nhóm đối tượng).
+**Chủ đề:** Tra cứu dịch vụ và quy định sử dụng Thư viện TDTU.
 
 **Tại sao nhóm chọn chủ đề này?**
-> Đây là chủ đề thuộc phạm vi bắt buộc của lớp L3A (dịch vụ/quy định đại học). Nội dung công khai, có con số và điều kiện cụ thể nên gold answer kiểm chứng được. Cùng một chủ đề lại có tài liệu riêng cho sinh viên và cho giảng viên/nhân viên, nên metadata filter `audience` có việc thật để làm.
+> Đây là nguồn công khai, có cấu trúc rõ ràng và có nhiều tình huống truy vấn thực tế (mượn, gia hạn, đặt phòng, tài khoản). Tài liệu chia theo nhiều nhóm đối tượng (`student`, `staff`, `all`) nên có việc thật cho metadata filter, và vì các mục đã chia sẵn theo heading nên phù hợp để so sánh các chiến lược chunking.
 
 ### Danh sách tài liệu (Data Inventory)
 
-| # | Tên tài liệu | Nguồn (Source URL) | Ngày lấy / Phiên bản | Số ký tự | Metadata đã gán |
-|---|--------------|------------|--------------------|----------|-----------------|
-| 1 | student-borrowing-policy | https://lib.tdtu.edu.vn/services/circulation/undergraduate-student | 2026-09-19 / not-stated | 1542 | audience=student, category=circulation |
-| 2 | library-card-account | https://lib.tdtu.edu.vn/guides/essential/library-card-account | 2026-09-19 / not-stated | 1414 | audience=all, category=account |
-| 3 | renewal-guide | https://lib.tdtu.edu.vn/guides/essential/renewal | 2026-09-19 / not-stated | 908 | audience=all, category=renewal |
-| 4 | reserve-a-room | https://lib.tdtu.edu.vn/guides/essential/reserve-a-room | 2026-09-19 / not-stated | 1277 | audience=all, category=room_booking |
-| 5 | undergraduate-student-services | https://lib.tdtu.edu.vn/user-group-services/undergraduate-student | 2026-09-19 / not-stated | 1218 | audience=student, category=user_group_services |
-| 6 | professional-staff-services | https://lib.tdtu.edu.vn/user-group-services/professional-staff | 2026-09-19 / not-stated | 1369 | audience=staff, category=user_group_services |
+Số ký tự tính trên phần nội dung Markdown sau khi bỏ YAML frontmatter. Cả 6 tài liệu đều có `department=library`, `language=en`, `retrieved_at=2026-09-19`, `document_version=not-stated` (trang nguồn không nêu số hiệu).
+
+| # | Tên tài liệu | Nguồn (Source URL) | Số ký tự | Metadata chính |
+|---|--------------|--------------------|---------:|----------------|
+| 1 | Undergraduate Student - Circulation Service | https://lib.tdtu.edu.vn/services/circulation/undergraduate-student | 1240 | audience=student, category=circulation |
+| 2 | Library Card & Account | https://lib.tdtu.edu.vn/guides/essential/library-card-account | 1150 | audience=all, category=account |
+| 3 | Renew Library Materials | https://lib.tdtu.edu.vn/guides/essential/renewal | 663 | audience=all, category=renewal |
+| 4 | Reserve a Room | https://lib.tdtu.edu.vn/guides/essential/reserve-a-room | 1028 | audience=all, category=room_booking |
+| 5 | Services for TDTU Undergraduate Students | https://lib.tdtu.edu.vn/user-group-services/undergraduate-student | 906 | audience=student, category=user_group_services |
+| 6 | Services for TDTU Academic and Professional Staff | https://lib.tdtu.edu.vn/user-group-services/professional-staff | 1007 | audience=staff, category=user_group_services |
 
 **Danh sách kiểm tra quản trị dữ liệu (Data governance checklist):**
-- [x] Tập tài liệu (Corpus) chỉ chứa nguồn công khai/được phép dùng và không chứa dữ liệu cá nhân, thông tin đăng nhập hoặc tài liệu nội bộ.
-- [x] Mỗi tài liệu có `source_url`, `retrieved_at`, `document_version` (hoặc ngày hiệu lực) trong metadata.
+- [x] Corpus chỉ dùng các trang công khai chính thức của TDTU Library, không chứa dữ liệu đăng nhập hay tài liệu nội bộ.
+- [x] Mỗi tài liệu có `source_url`, `retrieved_at`, `document_version` cùng các metadata phục vụ truy xuất.
 
 ### Cấu trúc Metadata (Metadata Schema)
 
-| Trường metadata | Kiểu | Ví dụ giá trị | Tại sao hữu ích cho truy xuất (retrieval)? |
-|----------------|------|---------------|-------------------------------|
-| `audience` | string (student / faculty / staff / all) | `student` | Lọc theo đối tượng hỏi, tránh lẫn quy định của sinh viên với của nhân viên |
-| `category` | string | `circulation`, `room_booking` | Thu hẹp theo loại dịch vụ |
-| `department` | string | `library` | Lọc theo đơn vị phụ trách |
-| `language` | string | `en` | Lọc theo ngôn ngữ nếu corpus đa ngữ |
-| `source_url`, `retrieved_at`, `document_version` | string | `2026-09-19`, `not-stated` | Truy vết nguồn và phiên bản |
+| Trường metadata | Kiểu | Ví dụ giá trị | Tại sao hữu ích cho truy xuất? |
+|-----------------|------|---------------|-------------------------------|
+| `doc_id` | string | `student-borrowing-policy` | Nhận diện tài liệu gốc của mỗi chunk, cần cho `delete_document` |
+| `audience` | string | `student` | Lọc theo đúng nhóm người dùng (chứng minh được bằng A/B ở mục 3) |
+| `category` | string | `circulation` | Phân biệt loại dịch vụ/quy định |
+| `department`, `language` | string | `library`, `en` | Giới hạn theo đơn vị / ngôn ngữ khi corpus mở rộng |
+| `source_url`, `retrieved_at`, `document_version` | string | URL, `2026-09-19`, `not-stated` | Truy vết nguồn và phiên bản |
 
 ---
 
 ## 2. Thiết kế chiến lược (Strategy Design) — Nhóm (15 điểm)
 
-> Mỗi thành viên thử **một chiến lược khác nhau** trên cùng bộ tài liệu; nhóm tổng hợp và so sánh ở đây.
+Mỗi thành viên dùng một chiến lược chunking khác nhau trên cùng 6 tài liệu và cùng 5 benchmark query.
 
 ### Phân tích đường cơ sở (Baseline Analysis)
 
-`ChunkingStrategyComparator().compare(text, chunk_size=300)` trên phần thân (đã bỏ frontmatter):
+`ChunkingStrategyComparator().compare()` trên 3 tài liệu, đã bỏ frontmatter:
 
-| Tài liệu | Chiến lược (Strategy) | Số lượng Chunk | Độ dài trung bình | Giữ được ngữ cảnh không? |
-|-----------|----------|-------------|------------|-------------------|
-| student-borrowing-policy (1241 ký tự) | FixedSizeChunker (`fixed_size`) | 5 | 248 | Không, cắt giữa câu |
-| | SentenceChunker (`by_sentences`) | 5 | 246 | Tạm, nhưng dòng gạch đầu dòng bị dính nhau |
-| | RecursiveChunker (`recursive`) | 6 | 205 | Tốt, cắt theo đoạn/dòng |
-| reserve-a-room (1029 ký tự) | FixedSizeChunker (`fixed_size`) | 4 | 257 | Không, cắt giữa câu |
-| | SentenceChunker (`by_sentences`) | 3 | 340 | Tạm |
-| | RecursiveChunker (`recursive`) | 5 | 204 | Tốt |
-| library-card-account (1151 ký tự) | FixedSizeChunker (`fixed_size`) | 4 | 288 | Không |
-| | SentenceChunker (`by_sentences`) | 4 | 285 | Tạm |
-| | RecursiveChunker (`recursive`) | 6 | 190 | Tốt |
+| Tài liệu | Chiến lược | Số chunk | Độ dài TB | Giữ được ngữ cảnh không? |
+|----------|-----------|---------:|----------:|--------------------------|
+| student-borrowing-policy | FixedSizeChunker | 3 | 447.00 | Khá, có thể cắt giữa section |
+| | SentenceChunker | 5 | 246.20 | Tốt ở mức câu, chunk nhỏ |
+| | RecursiveChunker | 3 | 413.67 | Tốt, ưu tiên ranh giới tự nhiên |
+| reserve-a-room | FixedSizeChunker | 3 | 376.33 | Khá |
+| | SentenceChunker | 3 | 340.33 | Tốt |
+| | RecursiveChunker | 3 | 343.00 | Tốt |
+| undergraduate-student-services | FixedSizeChunker | 2 | 478.50 | Khá |
+| | SentenceChunker | 3 | 299.67 | Tốt ở mức câu |
+| | RecursiveChunker | 2 | 453.50 | Tốt |
 
 ### Chiến lược của từng thành viên
 
-**Thành viên 1 — Trần Anh Vũ**
-- **Loại chiến lược:** custom, chunk theo heading (`HeadingChunker`).
-- **Mô tả & lý do chọn cho chủ đề này:** Tài liệu quy định của thư viện đã được chia sẵn thành mục `##`/`###`, mỗi mục là một đơn vị ngữ nghĩa trọn vẹn (ví dụ "Fines and Lost Items", "Capacity Rule"). Mỗi mục thành một chunk, có gắn lại tiêu đề `# Title` và tiêu đề mục để chunk không mất ngữ cảnh; mục dài hơn 600 ký tự hạ xuống `RecursiveChunker`.
-- **Code snippet (nếu custom):** xem `HeadingChunker` trong `bench.py`.
+**Thành viên 1 — Nguyễn Bá Chinh (R1): `FixedSizeChunker(chunk_size=500, overlap=50)`**
+- **Mô tả & lý do:** Đơn giản, kích thước chunk ổn định, làm baseline rõ ràng. Overlap 50 ký tự giảm khả năng mất thông tin tại ranh giới hai chunk.
+- **Code:** dùng `FixedSizeChunker` trong `src/chunking.py`.
+
+**Thành viên 2 — Trần Anh Vũ (R2): `RecursiveChunker(chunk_size=500)`**
+- **Mô tả & lý do:** Tách theo đoạn, dòng, câu trước khi phải cắt theo ký tự, nên chunk giữ được cấu trúc ngữ nghĩa hơn cắt cứng.
+- **Code:** dùng `RecursiveChunker` trong `src/chunking.py` (có bước gom các mảnh nhỏ liền kề tới sát `chunk_size`).
+
+**Thành viên 3 — Dương Thị Hồng Viên (R3): Heading/Section Chunking (`chunk_size=500`)**
+- **Mô tả & lý do:** Tài liệu tổ chức theo heading (`Loan Periods`, `Renewal`, `Learning Support`, `Booking and Cancellation`) nên mỗi section là một đơn vị ngữ nghĩa. Section quá dài thì chia tiếp bằng `RecursiveChunker` nhưng vẫn gắn lại heading vào từng chunk con.
 ```python
-for header, content in sections:
-    prefix = f"# {title}\n{header}\n" if header else f"# {title}\n"
-    if len(prefix) + len(content) <= self.max_size:
-        chunks.append(prefix + content)
-    else:
-        chunks.extend(prefix + part for part in self._fallback.chunk(content))
+sections = re.split(r"(?=^#{1,6}\s+)", text.strip(), flags=re.MULTILINE)
+
+if len(section) > self.chunk_size:
+    fallback = RecursiveChunker(chunk_size=available_size)
+    for subchunk in fallback.chunk(body):
+        chunks.append(f"{heading}\n{subchunk}".strip())
 ```
-
-**Thành viên 2 — [Tên]**
-- **Loại chiến lược:** [FixedSize (chunk_size=300, overlap=50) — chạy `python bench.py fixed`]
-- **Mô tả & lý do chọn:** [Điền]
-- **Code snippet (nếu custom):** không
-
-**Thành viên 3 — [Tên]**
-- **Loại chiến lược:** [Recursive (chunk_size=300) — chạy `python bench.py recursive`]
-- **Mô tả & lý do chọn:** [Điền]
-- **Code snippet (nếu custom):** không
 
 ### So Sánh Giữa Các Thành Viên
 
-Số liệu dưới đây do một máy chạy cả ba chiến lược trên cùng corpus và embedder (`paraphrase-multilingual-MiniLM-L12-v2`). Mỗi thành viên nên tự chạy lại để xác nhận.
+Cùng embedder local `paraphrase-multilingual-MiniLM-L12-v2`, cùng corpus, cùng 5 query, top-k = 3. Điểm truy xuất chấm chặt theo `docs/SCORING.md`: 2 điểm nếu gold ở top-1 và chunk chứa đáp án, 1 điểm nếu chunk chứa đáp án chỉ ở top-2/3, 0 nếu không có.
 
-| Thành viên | Chiến lược (Strategy) | Điểm truy xuất (/10) | Điểm mạnh | Điểm yếu |
-|-----------|----------|----------------------|-----------|----------|
-| Trần Anh Vũ | Heading | 9 | Mỗi chunk là một mục trọn vẹn, có tiêu đề nên ngữ cảnh rõ; giữ được đáp án trong top-3 khi có filter | Nhiều chunk hơn (35); các mục cùng tài liệu có điểm gần nhau nên câu 4 xếp sai mục lên top-1 |
-| [Tên 2] | FixedSize (300, overlap 50) | 7 | Đơn giản, độ dài chunk đều | Cắt giữa câu; khi không có filter thì chunk chứa đáp án của câu 5 rơi khỏi top-3 |
-| [Tên 3] | Recursive (300) | 8 | Cắt theo đoạn/dòng nên chunk mạch lạc hơn Fixed | Không có tiêu đề trong chunk nên mất ngữ cảnh mục |
+| Thành viên | Chiến lược | Điểm truy xuất (/10) | Chunk trong store | Điểm mạnh | Điểm yếu |
+|-----------|-----------|---------------------:|------------------:|-----------|----------|
+| Nguyễn Bá Chinh | FixedSize (500, overlap 50) | 8 | 16 | Đơn giản, dễ kiểm soát, overlap giảm mất ngữ cảnh ở biên | Cắt qua section; Q4 không có chunk chứa đáp án trong top-3 |
+| Trần Anh Vũ | Recursive (500) | 9 | 16 | Giữ ranh giới tự nhiên, cả 5 query có chunk liên quan trong top-3 | Q4 đáp án chỉ đứng hạng 2 |
+| Dương Thị Hồng Viên | Heading/Section (500) | 10 | 35 | Mỗi chunk là một section có tiêu đề nên rất tập trung; Q4 đứng top-1 | Phụ thuộc tài liệu có heading rõ; nhiều chunk hơn |
 
 **Chiến lược nào tốt nhất cho chủ đề này? Tại sao?**
-> Chunk theo heading cho điểm cao nhất (9/10) vì tài liệu quy định vốn đã chia theo mục có ý nghĩa, và việc gắn lại tiêu đề vào chunk giúp embedding "biết" chunk nói về gì. Tuy nhiên với corpus chỉ 6 tài liệu nhỏ, chênh lệch 7, 8 và 9 chưa đủ để kết luận chắc chắn, và cả ba đều gặp cùng một lỗi ở câu 4 (xem mục 3).
+> Heading/Section tốt nhất (10/10) vì tài liệu thư viện vốn chia theo section có ý nghĩa riêng, và việc gắn heading vào chunk giúp embedding của chunk tập trung đúng vào chủ đề của section. Recursive đứng thứ hai (9/10) nhờ tôn trọng ranh giới đoạn/dòng, còn Fixed-size (8/10) là baseline hợp lý nhưng cắt ngang section. Kết quả này chỉ phản ánh corpus 6 tài liệu nhỏ và benchmark hiện tại, không có nghĩa một chiến lược luôn thắng trên mọi loại tài liệu.
 
 ---
 
@@ -111,53 +109,87 @@ Số liệu dưới đây do một máy chạy cả ba chiến lược trên cù
 ### Câu hỏi đánh giá & Câu trả lời chuẩn (nhóm thống nhất)
 
 | # | Câu hỏi (Query) | Câu trả lời chuẩn (Gold Answer) | Chunk nào chứa thông tin? |
-|---|-------|-------------------------------|--------------------------|
-| 1 | What is the overdue fine for a late book? | 20,000 VND per day per item | `student-borrowing-policy`, mục Fines and Lost Items |
-| 2 | In which situations can I not renew my borrowed materials? | Khi tài liệu đã quá hạn, hoặc có người khác đã đặt giữ | `renewal-guide`, mục When Renewal Is Not Allowed |
-| 3 | How do I cancel a room reservation? | Liên hệ thư viện qua điện thoại, email, Facebook, hoặc nói với nhân viên ở Service/Information Desk | `reserve-a-room`, mục Booking and Cancellation |
-| 4 | How many people must be in my group to book a study room? | Nhóm đăng ký phải đạt ít nhất 50% sức chứa phòng và không vượt sức chứa tối đa | `reserve-a-room`, mục Capacity Rule |
-| 5 | What support does the library provide for my courses and required readings? (`metadata_filter={"audience": "student"}`) | Course readings, subject guides, required reading lists by course | `undergraduate-student-services`, mục Learning Support |
+|---|-----------------|--------------------------------|--------------------------|
+| 1 | For undergraduate students, how long is the loan period for circulating materials, and how many renewals are allowed? | 5 days; one renewal for an additional 5 days. | `student-borrowing-policy` → Loan Periods → Circulating Materials |
+| 2 | Under what conditions is renewal not allowed? | When the material is overdue or another user has placed a hold request. | `renewal-guide` → When Renewal Is Not Allowed |
+| 3 | How can a user cancel a library room booking? | By phone, email, Facebook, or by contacting staff at a Service Desk or Information Desk. | `reserve-a-room` → Booking and Cancellation |
+| 4 | Which credentials are used to sign in to the Library Portal? | The same credentials as the Student Information Portal or Lecturer/Staff Information Portal. | `library-card-account` → Library Portal Account |
+| 5 | What course-related support resources are available? *(filter `audience=student`)* | Course readings, subject guides, and required reading lists by course. | `undergraduate-student-services` → Learning Support |
 
 ### Tổng hợp chất lượng truy xuất của nhóm
 
-> Cách chấm (theo `docs/SCORING.md`): **2 điểm/câu**: top-3 chứa chunk liên quan và ngữ cảnh có đáp án (2 nếu gold ở top-1), có liên quan nhưng không ở top-1 (1), không có trong top-3 (0).
+Điểm từng câu theo thang 2 / 1 / 0:
 
-| # | Câu hỏi | Chiến lược tốt nhất cho câu này | Có chunk liên quan trong top-3? | Ghi chú |
-|---|---------|-------------------------------|-------------------------------|---------|
-| 1 | Phí quá hạn | Cả ba (2/2) | Có | Câu tra số liệu, dễ |
-| 2 | Khi nào không gia hạn | Recursive, Heading (2/2); Fixed 1/2 | Có | Hai tài liệu cùng nói về gia hạn |
-| 3 | Huỷ đặt phòng | Cả ba (2/2) | Có | Tiêu đề mục chứa đúng từ "Cancellation" |
-| 4 | Số người tối thiểu | Không chiến lược nào (cả ba 1/2) | Có, nhưng không ở top-1 | Xem failure case bên dưới |
-| 5 | Hỗ trợ học tập (cần filter) | Heading (2/2); Fixed và Recursive 1/2 | Có (khi có filter) | Không filter thì `fixed` mất hẳn chunk chứa đáp án |
+| Query | FixedSize | Recursive | Heading | Ghi chú |
+|-------|:---------:|:---------:|:-------:|---------|
+| Q1 — Loan period & renewal | 2 | 2 | 2 | Câu tra số liệu, cả ba đều dễ |
+| Q2 — Renewal conditions | 2 | 2 | 2 | Hai tài liệu cùng nói về gia hạn nhưng đều chứa đáp án |
+| Q3 — Cancel room booking | 2 | 2 | 2 | Tiêu đề mục chứa đúng từ "Cancellation" |
+| Q4 — Library Portal credentials | **0** | **1** | **2** | Phân hoá rõ nhất giữa ba chiến lược |
+| Q5 — Course support (có filter) | 2 | 2 | 2 | Xem A/B bên dưới |
+| **Tổng** | **8** | **9** | **10** | |
 
-**Failure case (câu 4):** top-1 là mục "Usage Time" (score 0.563) còn mục "Capacity Rule" chứa đáp án chỉ đứng hạng 2 (0.433). Nguyên nhân: mục Usage Time lặp các từ "Group Study … Room" giống câu hỏi, và cosine đo độ giống chủ đề chứ không đo việc chunk có chứa đáp án hay không. Đề xuất sửa: thêm bước rerank, hoặc viết lại truy vấn cho cụ thể ("capacity" / "minimum group size").
+**Chấm theo `doc_id` sẽ thổi phồng kết quả.** Ở Q4, FixedSize vẫn lấy được chunk của đúng tài liệu `library-card-account` trong top-3 nên nếu chỉ kiểm document thì được điểm, nhưng không chunk nào chứa câu trả lời. Vì vậy nhóm chấm ở mức chunk (ngữ cảnh có chứa chuỗi đáp án hay không).
+
+### Failure case: Q4 với FixedSizeChunker
+
+- **Câu hỏi hỏng:** "Which credentials are used to sign in to the Library Portal?"
+- **Điều gì xảy ra:** Top-3 gồm `library-card-account#2` (0.58) và hai chunk của `professional-staff-services` (0.53); không chunk nào chứa "same credentials as the Student Information Portal…". Recursive đưa chunk đúng lên hạng 2 (0.559 so với top-1 sai 0.567), Heading đưa section `Library Portal Account` lên top-1 (0.772).
+- **Vì sao:** Không phải do corpus thiếu thông tin hay metadata sai. Nguyên nhân là ranh giới chunk: cắt theo số ký tự cắt ngang section, hoặc gộp nhiều chủ đề (thẻ thư viện, hỗ trợ theo nhóm đối tượng, tài khoản portal) vào cùng chunk, nên embedding không tập trung vào "Library Portal credentials". Cosine đo độ giống chủ đề chứ không đo chunk có chứa đáp án hay không.
+- **Đề xuất sửa:** giảm `chunk_size`; dùng Recursive hoặc Heading cho tài liệu Markdown có cấu trúc; gắn heading vào nội dung chunk; thêm bước rerank sau vector search nếu cần độ chính xác cao hơn.
+
+### Metadata filtering (A/B bắt buộc trên Q5)
+
+| | Top-1 | Score | Kết quả |
+|--|-------|------:|---------|
+| Có `audience=student` (FixedSize) | `undergraduate-student-services` | 0.668 | Đúng, chứa course readings, subject guides, required reading lists |
+| Không filter (FixedSize) | `professional-staff-services` | 0.688 | Sai đối tượng; tài liệu sinh viên tụt xuống hạng 2 |
 
 **Lọc bằng metadata có giúp ích không? Ở câu hỏi nào?**
-> Có, ở câu 5. Không filter thì hai chunk của tài liệu dành cho nhân viên (`professional-staff-services`) chiếm slot top-1 và top-3 (chiến lược Heading), và với chiến lược Fixed thì cả top-3 không còn chunk chứa "required reading lists". Có `audience=student` thì chunk đúng quay lại top-3. Đánh đổi: filter cứng có thể loại nhầm tài liệu `audience=all` nếu ta chỉ lọc bằng `student`.
+> Có, ở Q5. Tài liệu staff cũng có mục hỗ trợ giảng dạy và học liệu nên cosine cao hơn (0.688 so với 0.668) dù người dùng trong benchmark là sinh viên. Filter loại candidate sai **trước** khi xếp hạng nên ổn định hơn. Một điểm cần nói rõ: Heading/Section cho kết quả đúng ở top-1 ngay cả khi không filter (0.671 so với 0.666 của tài liệu staff), nhưng khoảng cách rất mỏng, nên filter vẫn là lớp bảo vệ cần thiết chứ không chỉ là tối ưu. Đánh đổi: filter cứng theo `student` sẽ loại các tài liệu `audience=all` cũng chứa thông tin cần thiết (giảm recall).
+
+### Kiểm tra câu trả lời của Agent (FixedSize, R1)
+
+`KnowledgeBaseAgent` đánh số các chunk `[1] [2] [3]` kèm nguồn, yêu cầu chỉ dùng ngữ cảnh, trích dẫn số đoạn, không suy đoán khi thiếu, và không làm theo chỉ dẫn nằm trong tài liệu được truy xuất.
+
+| Query | Kết quả |
+|-------|---------|
+| Q1 | Đúng: 5 ngày, gia hạn một lần thêm 5 ngày |
+| Q2 | Đúng: overdue và hold request; bổ sung thêm thông tin có căn cứ trong corpus về non-circulating material |
+| Q3 | Đúng: phone, email, Facebook hoặc Service/Information Desk |
+| Q4 | Retrieved context không có đáp án, Agent thông báo context chưa đủ thay vì bịa credentials |
+| Q5 | Đúng: course readings, subject guides, required reading lists |
+
+Hành vi ở Q4 là điểm đáng giá: khi evidence chưa đủ, hệ thống nói rõ là chưa đủ thay vì tạo câu trả lời không có căn cứ.
 
 ---
 
 ## 4. Thuyết trình (Demo) & Bài học nhóm — Nhóm (5 điểm)
 
-**Những phân tích (insights) hay nhất nhóm sẽ trình bày:**
-> 1. Chấm theo `doc_id` cho 5/5 ở cả ba chiến lược, nhưng chấm theo chuỗi đáp án chỉ còn 7, 8 và 9 trên 10.
-> 2. Metadata filter `audience` có tác dụng thật ở câu 5 (A/B có và không filter).
-> 3. Failure case câu 4: cosine ưu tiên chunk cùng chủ đề hơn chunk chứa đáp án.
+**Những phân tích hay nhất nhóm sẽ trình bày:**
+> 1. Cùng corpus và embedder, chỉ đổi cách chia chunk mà Q4 đi từ 0 điểm (Fixed) lên 1 (Recursive) rồi 2 (Heading).
+> 2. Chấm theo `doc_id` cho kết quả đẹp hơn thực tế; phải chấm ở mức chunk và nội dung.
+> 3. Metadata filter thay đổi hẳn Top-1 của Q5 (A/B có và không filter).
 
 **Bài học rút ra khi so sánh trong nhóm:**
-> Cùng một corpus và embedder, cách chia chunk làm thay đổi việc chunk chứa đáp án có lọt top-3 hay không. Chunk có tiêu đề mục (Heading) giữ được ngữ cảnh tốt hơn chunk cắt cứng theo số ký tự.
+> - *Chunking ảnh hưởng trực tiếp đến embedding:* chunk gom nhiều chủ đề sẽ có vector "pha loãng" nên similarity với query cụ thể thấp hơn, còn chunk tập trung một section thì khớp hơn.
+> - *Embedding và metadata giải quyết hai việc khác nhau:* embedding trả lời "nội dung nào gần nghĩa với query", metadata trả lời "được phép hoặc nên tìm trong tài liệu nào". Kết hợp hai lớp cho kết quả chính xác hơn.
+> - *Chiến lược phải hợp với cấu trúc dữ liệu:* Fixed-size hợp khi cần đơn giản và kích thước ổn định, Recursive hợp với văn bản tự nhiên, Heading/Section hợp với Markdown, policy, FAQ có cấu trúc rõ. Không có chiến lược tốt nhất cho mọi corpus.
+> - *Grounding quan trọng hơn việc luôn trả lời:* ở Q4 Agent chọn nói "chưa đủ ngữ cảnh", là hành vi an toàn hơn trong hệ thống RAG thực tế.
 
 **Nếu làm lại, nhóm sẽ thay đổi gì trong chiến lược dữ liệu (data strategy)?**
-> Thu thập thêm tài liệu dành cho giảng viên/nhân viên cùng chủ đề (ví dụ hạn mức mượn sách của nhân viên) để A/B filter rõ hơn, và ghi `audience_detail` đầy đủ. Ngoài ra sẽ thêm overlap hoặc rerank để giảm lỗi kiểu câu 4.
+> Bổ sung thêm tài liệu dành cho giảng viên/nhân viên về cùng chủ đề (ví dụ hạn mức mượn của nhân viên) để A/B filter rõ hơn ở nhiều câu hơn; thêm overlap hoặc rerank để giảm lỗi kiểu Q4; và chạy nhiều giá trị `chunk_size` thay vì cố định 500.
+
+**Kịch bản demo (6–8 phút):** (1) giới thiệu 6 tài liệu và metadata (1'); (2) mỗi thành viên nói chiến lược của mình (2'); (3) chạy `bench.py` cho 3 chiến lược, tập trung Q4 và Q5 (3'); (4) demo Q5 có và không có `metadata_filter={"audience": "student"}`, rồi Agent trả lời Q4 với Fixed-size để thấy hành vi từ chối suy đoán (2').
 
 ---
 
 ## Tự Đánh Giá (Phần Nhóm)
 
 | Tiêu chí | Điểm tự đánh giá |
-|----------|-------------------|
-| Lựa chọn tài liệu (Document Set Quality) | 8 / 10 |
-| Thiết kế chiến lược (Strategy Design) | 12 / 15 |
-| Chất lượng truy xuất (Retrieval Quality) | 8 / 10 |
-| Thuyết trình (Demo) | [Điền sau demo] / 5 |
-| **Tổng phần nhóm** | **[Điền] / 40** |
+|----------|------------------|
+| Lựa chọn tài liệu (Document Set Quality) | / 10 |
+| Thiết kế chiến lược (Strategy Design) | / 15 |
+| Chất lượng truy xuất (Retrieval Quality) | / 10 |
+| Thuyết trình (Demo) | / 5 |
+| **Tổng phần nhóm** | **/ 40** |
