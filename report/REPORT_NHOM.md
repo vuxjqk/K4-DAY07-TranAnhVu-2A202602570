@@ -1,7 +1,7 @@
 # Báo Cáo Nhóm — Lab 7: Embedding & Vector Store
 
-**Nhóm:** [Điền tên nhóm]
-**Thành viên:** Trần Anh Vũ (2A202602570), [Thành viên 2], [Thành viên 3]
+**Nhóm:** 3nguoi
+**Thành viên:** Trần Anh Vũ (2A202602570), Nguyễn Bá Chính (2A202602654), Dương Thị Hồng Viên (2A202602385)
 **Ngày:** 2026-09-19
 
 > **Nộp 1 bản / nhóm.** Phần cá nhân (hướng tiếp cận, kết quả riêng, dự đoán…) mỗi thành viên nộp riêng trong `REPORT_CANHAN.md`. Chi tiết thang điểm: `docs/SCORING.md`.
