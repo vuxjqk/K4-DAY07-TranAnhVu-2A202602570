@@ -1,0 +1,51 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights:  99%|#########9| 198/199 [00:00<00:00, 1969.98it/s]Loading weights: 100%|##########| 199/199 [00:00<00:00, 1979.93it/s]
+Embedding backend: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+
+==============================================================================
+Chien luoc: heading | 35 chunk da nap
+==============================================================================
+
+  Q1: What is the overdue fine for a late book?  (filter=None)
+    1. +0.511 [v] student-borrowing-policy#3           '# Undergraduate Student - Circulation Service\n## Fines and L'
+    2. +0.343 [ ] student-borrowing-policy#5           "# Undergraduate Student - Circulation Service\n## Borrower's "
+    3. +0.240 [ ] student-borrowing-policy#0           '# Undergraduate Student - Circulation Service\n## Loan Period'
+    -> diem=2/2 | gold doc trong top-3=True | ngu canh chua dap an=True
+
+  Q2: In which situations can I not renew my borrowed materials?  (filter=None)
+    1. +0.614 [v] renewal-guide#3                      '# Renew Library Materials\n## When Renewal Is Not Allowed\nRen'
+    2. +0.594 [ ] renewal-guide#0                      '# Renew Library Materials\nRenewal extends the borrowing peri'
+    3. +0.509 [v] student-borrowing-policy#2           '# Undergraduate Student - Circulation Service\n## Renewal\nIte'
+    -> diem=2/2 | gold doc trong top-3=True | ngu canh chua dap an=True
+
+  Q3: How do I cancel a room reservation?  (filter=None)
+    1. +0.592 [v] reserve-a-room#0                     '# Reserve a Room\n## Booking and Cancellation\nLibrary rooms a'
+    2. +0.410 [ ] student-borrowing-policy#4           '# Undergraduate Student - Circulation Service\n## Material Re'
+    3. +0.395 [ ] reserve-a-room#3                     '# Reserve a Room\n## Fees\nRoom-specific charges are shown in '
+    -> diem=2/2 | gold doc trong top-3=True | ngu canh chua dap an=True
+
+  Q4: How many people must be in my group to book a study room?  (filter=None)
+    1. +0.563 [ ] reserve-a-room#1                     '# Reserve a Room\n## Usage Time\n- Group Study, Presentation, '
+    2. +0.433 [v] reserve-a-room#5                     '# Reserve a Room\n## Capacity Rule\nThe registered group must '
+    3. +0.408 [ ] reserve-a-room#2                     '# Reserve a Room\n## Extensions\nFor Group Study, Presentation'
+    -> diem=1/2 | gold doc trong top-3=True | ngu canh chua dap an=True
+
+  Q5: What support does the library provide for my courses and required readings?  (filter={'audience': 'student'})
+    1. +0.607 [v] undergraduate-student-services#3     '# Services for TDTU Undergraduate Students\n## Learning Suppo'
+    2. +0.576 [ ] undergraduate-student-services#2     '# Services for TDTU Undergraduate Students\n## Materials Purc'
+    3. +0.565 [ ] undergraduate-student-services#0     '# Services for TDTU Undergraduate Students\n## Essential Guid'
+    -> diem=2/2 | gold doc trong top-3=True | ngu canh chua dap an=True
+
+  A/B filter cho: What support does the library provide for my courses and required readings?
+   CO filter:
+    1. +0.607 [v] undergraduate-student-services#3     '# Services for TDTU Undergraduate Students\n## Learning Suppo'
+    2. +0.576 [ ] undergraduate-student-services#2     '# Services for TDTU Undergraduate Students\n## Materials Purc'
+    3. +0.565 [ ] undergraduate-student-services#0     '# Services for TDTU Undergraduate Students\n## Essential Guid'
+   KHONG filter:
+    1. +0.607 [ ] professional-staff-services#0        '# Services for TDTU Academic and Professional Staff\n## Essen'
+    2. +0.607 [v] undergraduate-student-services#3     '# Services for TDTU Undergraduate Students\n## Learning Suppo'
+    3. +0.598 [ ] professional-staff-services#1        '# Services for TDTU Academic and Professional Staff\n## Borro'
+
+  TONG heading: 9/10 diem (cham chat) | 5/5 (chi kiem doc_id)
+
+TONG KET: heading=9/10
